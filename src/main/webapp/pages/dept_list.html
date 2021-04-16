@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="../vuejs/vuejs-2.5.16.js"></script>
+    <script type="text/javascript" src="../vuejs/axios-0.18.0.js"></script>
+</head>
+<body>
+<div id="postdiv">
+    <h2 align="center">科室页面</h2>
+    <div id="postlistdiv">
+        <table align="center" border="1" rules="all">
+            <tr align="center" bgcolor="#00ffff">
+                <th>编码</th>
+                <th>科室名称</th>
+                <th>操作</th>
+            </tr>
+            <tr v-for="d in page.list">
+                <td>{{d.id}}</td>
+                <td>{{d.deptname}}</td>
+                <td><button @click="addDeptPost(d.id,d.deptname)">分配职位</button></td>
+            </tr>
+            <tr>
+                <td colspan="100">
+                    <span>{{page.currentPage}}/{{page.pageCount}}页</span>
+                    <span>每页记录数：{{page.pageSize}}</span>
+                    <button @click="getUserList(1,5)">首页</button>
+                    <button @click="getUserList(page.previousPage,5)">上一页</button>
+                    <button @click="getUserList(page.nextPage,5)">下一页</button>
+                    <button @click="getUserList(page.pageCount,5)">尾页</button>
+                </td>
+            </tr>
+        </table>
+
+        <div id="addDeptPostDiv" style="display: none" align="center">
+            <table>
+                <tr>
+                    <td colspan="10">您正在为<b>{{deptName}}</b>分配职业</td>
+                </tr>
+                <tr>
+                    <td>职业：</td>
+                    <td>
+                        <span v-for="p in postList">
+                            <input type="checkbox" v-model="deptPostId" :value="p.id">{{p.postname}}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="100" align="center">
+                        <button @click="saveDeptPost">提交</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var vm = new Vue({
+        el:"#postdiv",
+        data:{
+            page:{},
+            deptName:"",
+            deptId:0,
+            postList:[],
+            DeptPostId:[],
+        },
+        methods:{
+            getUserList:function (pageNum,pageSize) {
+                var _this=this
+                axios.post("/DeptController/getDeptList.do?pageNum="+pageNum+"&pageSize="+pageSize).then(function (response) {
+                    _this.page=response.data;
+                })
+            },
+            addDeptPost:function (deptId,deptName) {
+                var _this=this
+                document.getElementById("addDeptPostDiv").style.display="block"
+                _this.deptId=deptId
+                _this.deptName=deptName
+                axios.post("/DeptController/initDeptPost.do?deptId="+deptId).then(function (response) {
+                    _this.postList=response.data.postAll
+                    _this.deptPostId=response.data.deptPostId
+
+                })
+            },
+            saveDeptPost:function () {
+                var _this=this
+                axios.post("/DeptController/saveDeptPost.do?deptId="+_this.deptId,_this.deptPostId).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="职业分配成功"){
+                        document.getElementById("addDeptPostDiv").style.display="none"
+                        vm.getUserList(_this.page.currentPage,5)
+                    }
+                })
+            }
+        }
+    })
+    vm.getUserList(1,5)
+</script>
+</html>

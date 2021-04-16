@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="../vuejs/vuejs-2.5.16.js"></script>
+    <script type="text/javascript" src="../vuejs/axios-0.18.0.js"></script>
+
+    <!-- 这是样式 -->
+    <link href="../css/style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../csstree/zTreeStyle.css" type="text/css">
+
+    <!-- tree.js 树的js文件，jquery不能删，jquery和tree的结合的 -->
+    <script type="text/javascript" src="../js/tree.js"></script>
+    <script type="text/javascript" src="../js/jquery-1.8.2.js"></script>
+    <script type="text/javascript" src="../js/jquery.ztree.all-3.3.js"></script>
+
+</head>
+<body>
+    <div id="postdiv">
+        <h2 align="center">职业页面</h2>
+        <div id="postlistdiv">
+            <table align="center" border="1" rules="all">
+                <tr align="center" bgcolor="#00ffff">
+                    <th>编码</th>
+                    <th>职业名</th>
+                    <th>职业描述</th>
+                    <th>操作</th>
+                </tr>
+                <tr v-for="p in page.list">
+                    <td>{{p.id}}</td>
+                    <td>{{p.postname}}</td>
+                    <td>{{p.postdesc}}</td>
+                    <td><button @click="echo(p.id)">分配权限</button></td>
+                </tr>
+                <tr>
+                    <td colspan="100">
+                        <span>{{page.currentPage}}/{{page.pageCount}}页</span>
+                        <span>每页记录数：{{page.pageSize}}</span>
+                        <button @click="getUserList(1,5)">首页</button>
+                        <button @click="getUserList(page.previousPage,5)">上一页</button>
+                        <button @click="getUserList(page.nextPage,5)">下一页</button>
+                        <button @click="getUserList(page.pageCount,5)">尾页</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="treeDiv" style="display: none">
+            <div id="nodes">
+                <ul id="treeClass" class="ztree"></ul>
+            </div>
+            <button @click="savePostMeun()">保存</button>
+        </div>
+    </div>
+</body>
+<script>
+
+    var setting={
+        view:{
+            showLine:true//是否显示线，默认为true
+        },
+        data:{
+            key:{
+                name:"mname"
+            },
+            simpleData:{
+                enable:true,//开启树的层级结构
+                idKey:"id",//设置树节点id，节点参数id必须与之相匹配，即在Actiob中穿过来的值必须与之相对应
+                pIdKey:"pid"//设置pid，节点参数pid必须与之相匹配
+            }
+        },
+        check:{
+            enable:true
+        },
+        callback:{
+            onClick:zTreeClick
+        }
+    };
+    var currentSelectedNode;
+    function zTreeClick(event, treeId, treeNode) {
+        var treeObj = $.fn.zTree.getZTreeObj("treeClass");
+        currentSelectedNode = treeObj.getNodeByTId(treeNode.tId);
+        var path =currentSelectedNode.url;
+        parent.frames[3].location.href = path;
+    };
+    //就绪函数
+
+    var vm = new Vue({
+        el:"#postdiv",
+        data:{
+            page:{},
+            meunIds:[],
+            postId:"",
+        },
+        methods:{
+            getUserList:function (pageNum,pageSize) {
+                var _this=this
+                axios.post("/PostController/getPostList.do?pageNum="+pageNum+"&pageSize="+pageSize).then(function (response) {
+                    _this.page=response.data;
+                })
+            },
+            savePostMeun:function () {
+                var _this =this
+                var treeObj = $.fn.zTree.getZTreeObj("treeClass");
+                var nodes = treeObj.getCheckedNodes(true);
+                console.log(nodes)
+                for(var x=0;x<nodes.length;x++){
+                    _this.meunIds.push(nodes[x].id)
+                }
+                axios.post("/PostController/savePostMeun.do?postId="+_this.postId,_this.meunIds). then(function (response) {
+                    alert(response.data)
+                    if(response.data=="权限修改成功"){
+                        document.getElementById("treeDiv").style.display="none"
+                    }
+                })
+            },
+            echo:function (id) {
+                var _this=this
+                _this.postId=id
+                document.getElementById("treeDiv").style.display="block"
+                axios.post("/PostController/initMeun.do?id="+id).then(function (response) {
+                    $.fn.zTree.init($("#treeClass"),setting,response.data);
+                })
+            }
+        }
+    })
+    vm.getUserList(1,5)
+</script>
+</html>

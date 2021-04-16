@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="../vuejs/vuejs-2.5.16.js"></script>
+    <script type="text/javascript" src="../vuejs/axios-0.18.0.js"></script>
+</head>
+<body>
+    <div id="userdiv">
+        <h2 align="center">用户页面</h2>
+        <div id="userlistdiv">
+            <table align="center" border="1" rules="all">
+                <tr>
+                    <td colspan="100">
+                        <input type="text" v-model="UserEntity.uname">
+                        <button @click="getUserList(1,5)">查询</button>
+                    </td>
+                </tr>
+                <tr align="center" bgcolor="#00ffff">
+                    <th>编码</th>
+                    <th>姓名</th>
+                    <th>年龄</th>
+                    <th>性别</th>
+                    <th>生日</th>
+                    <th>操作</th>
+                </tr>
+                <tr v-for="u in userlist">
+                    <td>{{u.id}}</td>
+                    <td>{{u.uname}}</td>
+                    <td>{{u.age}}</td>
+                    <td><span v-html="u.gender==1?'男':'女'"></span></td>
+                    <td>{{u.birth}}</td>
+                    <td>
+                        <button @click="addUserDept(u.id,u.uname)">分配部门</button>
+                        <button @click="addUserPost(u.id,u.uname)">分配职业</button>
+                </tr>
+                <tr>
+                    <td colspan="100">
+                        <sp-an>{{page.currentPage}}/{{page.pageCount}}页</sp-an>
+                        <span>每页记录数：{{page.pageSize}}</span>
+                        <button @click="getUserList(1,5)">首页</button>
+                        <button @click="getUserList(page.previousPage,5)">上一页</button>
+                        <button @click="getUserList(page.nextPage,5)">下一页</button>
+                        <button @click="getUserList(page.pageCount,5)">尾页</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="addUserPostDiv" style="display: none" align="center">
+            <table border="1">
+                <tr align="center">
+                    <th colspan="100"><p> 您正在为<b>{{userPostName}}</b>分配职业</p></th>
+                </tr>
+                <tr v-if="tishi != ''">
+                    <td colspan="100"><p>{{tishi}}</p></td>
+                </tr>
+                <tr v-for="dept in userDeptBeans">
+                    <td>{{dept.deptname}}</td>
+                    <td><span  v-for="p in dept.postBeans"><input type="checkbox" v-model="uidList" :value="p.id">{{p.postname}}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="100"><button @click="saveUserPost()">提交</button></td>
+                </tr>
+            </table>
+
+
+        </div>
+
+        <div id="addDeptDiv" style="display: none" align="center">
+            <p> 您正在为<b>{{userName}}</b>分配部门</p>
+           <b> 部门：</b>
+            <span v-for="d in deptBeans">
+                <input type="checkbox" name="depts" v-model="userDeptId"  :value="d.id"> {{d.deptname}}
+            </span>
+            <button @click="saveUserDept()">提交</button>
+        </div>
+    </div>
+</body>
+<script>
+    var vm = new Vue({
+        el:"#userdiv",
+        data:{
+            userlist:[],
+            page:{},
+            UserEntity:{},
+            addDeptUid:1,
+            userDeptId:[],
+            deptBeans:[],
+            userName:"",
+            userPostName:"",<!--分配职业的名字-->
+            addPostUid:1,<!--分配职业的id-->
+            userDeptBeans:[],<!--用户选取的部门及部门下所有的职业-->
+            uidList:[],<!--用户选取的所有职业id-->
+            tishi:"",
+        },
+        methods:{
+            getUserList:function (pageNum,pageSize) {
+                var _this=this
+                axios.post("/UserController/getUserList.do?pageNum="+pageNum+"&pageSize="+pageSize,_this.UserEntity).then(function (response) {
+                    _this.page=response.data;
+                    _this.userlist=response.data.list;
+                })
+            },
+            addUserDept:function (id,userName) {
+                var _this=this
+                _this.addDeptUid=id
+                _this.userName=userName
+                axios.post("/UserController/initUserDept.do?id="+id).then(function (response) {
+                    document.getElementById("addDeptDiv").style.display="block"
+                    if(response.data.userDeptId[0]=="null"){
+                        _this.userDeptId=[]
+                    }else {
+                        _this.userDeptId=response.data.userDeptId
+                    }
+                        _this.deptBeans=response.data.deptBeans
+                })
+            },
+            saveUserDept:function () {
+                var _this=this
+                axios.post("/UserController/saveUserDept.do?userId="+_this.addDeptUid,_this.userDeptId).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="分配部门成功"){
+                        document.getElementById("addDeptDiv").style.display="none"
+                        vm.getUserList(_this.page.currentPage,_this.page.pageSize)
+                    }
+                })
+            },
+            addUserPost:function (uid,uname) {
+                var _this=this
+                _this.addPostUid=uid
+                _this.userPostName=uname
+                axios.post("/UserController/initUserPost.do?uid="+uid).then(function (response) {
+                    document.getElementById("addUserPostDiv").style.display="block"
+
+                    if(response.data.deptBeans.length<1){
+                        _this.tishi="请先为用户分配部门"
+                    }else{
+                        _this.tishi=""
+                    }
+                    _this.userDeptBeans=response.data.deptBeans
+                    _this.uidList=response.data.uidList
+                })
+            },
+            saveUserPost:function () {
+                var _this=this
+                console.log(_this.uidList)
+                axios.post("/UserController/saveUserPost.do?userId="+_this.addPostUid,_this.uidList).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="职业分配成功"){
+                        document.getElementById("addUserPostDiv").style.display="none"
+                    }else{
+                        vm.addUserPost(_this.addPostUid)
+                    }
+                })
+            }
+        }
+    })
+    vm.getUserList(1,5)
+</script>
+</html>

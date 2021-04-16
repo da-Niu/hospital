@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="page">
+        用户名：<input type="text" v-model="ub.uname"/><br>
+        密码：<input type="password" v-model="ub.upwd"><br>
+        <button @click="goLogin">登录</button>
+    </div>
+</body>
+<script src="vuejs/vuejs-2.5.16.js"></script>
+<script src="vuejs/axios-0.18.0.js"></script>
+<script>
+    new Vue({
+        el:"#page",
+        data:{
+            ub:{}
+        },
+        methods:{
+            goLogin:function () {
+                var _this=this
+                axios.post("/UserController/GoLogin",_this.ub).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="登录成功"){
+                        location.href="/pages/main.html"
+                    }
+                })
+            }
+        }
+    })
+</script>
+</html>

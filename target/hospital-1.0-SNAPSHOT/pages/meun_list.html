@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="page">
+        <h2 align="center">菜单页面</h2>
+            <table align="center" border="1" rules="all">
+                <tr align="center" bgcolor="#00ffff">
+                    <th>Id</th>
+                    <th>父Id</th>
+                    <th>系统名称</th>
+                    <th>url</th>
+                    <th>target(作用域)</th>
+                    <th>图标url</th>
+                    <th>是否为按钮</th>
+                    <th>操作<button @click="addTabled">添加</button></th>
+                </tr>
+                <tr v-for="m in meunList">
+                    <td>{{m.id}}</td>
+                    <td>{{m.pid}}</td>
+                    <td>{{m.mname}}</td>
+                    <td>{{m.url}}</td>
+                    <td>{{m.target}}</td>
+                    <td>{{m.icon}}</td>
+                    <td>{{m.isbutton=='0'?'否':'是'}}</td>
+                    <td><button @click="seleMeunByPid(m.id)">查询下级</button>
+                        <button @click="delMeunByid(m.id)">删除</button></td>
+                </tr>
+            </table>
+        <div  id="addTable" style="display: none">
+            <table  align="center" border="1" rules="all">
+                <tr>
+                    <td>系统名称：<input type="text" v-model="meun.mname" ></td>
+                </tr>
+                <tr>
+                    <td>访问地址：<input type="text" v-model="meun.url" ></td>
+                </tr>
+                <tr>
+                    <td>作用域：<input type="text" v-model="meun.target" ></td>
+                </tr>
+                <tr>
+                    <td>图标地址：<input type="text" v-model="meun.icon" ></td>
+                </tr>
+                <tr>
+                    <td>是否为按钮：<select v-model="meun.isbutton">
+                        <option value="0">否</option>
+                        <option value="1">是</option>
+                    </select></td>
+                </tr>
+                <tr>
+                    <td><button @click="addMeun">添加</button></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../vuejs/vuejs-2.5.16.js"></script>
+<script type="text/javascript" src="../vuejs/axios-0.18.0.js"></script>
+<script>
+    var vm =new Vue({
+        el:"#page",
+        data:{
+            meunList:[],
+            meun:{},
+            addTableDisplay:true,
+        },
+        methods:{
+            seleMeunByPid:function (id) {
+                var _this=this
+                _this.meun.pid=id
+                axios.post("/MeunConreoller/seleMeunByPid.do?pid="+id,).then(function (response) {
+                _this.meunList=response.data
+                })
+            },
+            addTabled:function () {
+                var _this=this
+                if(_this.addTableDisplay==true){
+                    _this.addTableDisplay=false;
+                    document.getElementById("addTable").style.display="block";
+                }else{
+                    _this.addTableDisplay=true;
+                    document.getElementById("addTable").style.display="none";
+                }
+            },
+            addMeun:function () {
+                var _this=this
+                axios.post("/MeunConreoller/addMeun.do",_this.meun).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="添加成功"){
+                        _this.addTableDisplay=true;
+                        document.getElementById("addTable").style.display="none";
+                        _this.meun.mname=""
+                        _this.meun.target=""
+                        _this.meun.url=""
+                        _this.meun.icon=""
+                        vm.seleMeunByPid(_this.meun.pid);
+                    }
+                })
+            },
+            delMeunByid:function (id) {
+                var _this=this
+                axios.post("/MeunConreoller/delMeunByid.do?id="+id).then(function (response) {
+                    alert(response.data)
+                    if(response.data=="删除成功"){
+                        vm.seleMeunByPid(_this.meun.pid)
+                    }
+                })
+            }
+        }
+    })
+    vm.seleMeunByPid(1);
+</script>
+</html>
